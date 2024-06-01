@@ -9,6 +9,7 @@
 class LocalDocs : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(bool databaseValid READ databaseValid NOTIFY databaseValidChanged)
     Q_PROPERTY(LocalDocsModel *localDocsModel READ localDocsModel NOTIFY localDocsModelChanged)
 
 public:
@@ -16,10 +17,13 @@ public:
 
     LocalDocsModel *localDocsModel() const { return m_localDocsModel; }
 
+    Q_INVOKABLE void forceIndexing(const QString &collection);
     Q_INVOKABLE void addFolder(const QString &collection, const QString &path);
     Q_INVOKABLE void removeFolder(const QString &collection, const QString &path);
 
     Database *database() const { return m_database; }
+
+    bool databaseValid() const { return m_database->isValid(); }
 
 public Q_SLOTS:
     void handleChunkSizeChanged();
@@ -27,10 +31,12 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void requestStart();
-    void requestAddFolder(const QString &collection, const QString &path, bool fromDb);
+    void requestForceIndexing(const QString &collection);
+    void requestAddFolder(const QString &collection, const QString &path);
     void requestRemoveFolder(const QString &collection, const QString &path);
     void requestChunkSizeChange(int chunkSize);
     void localDocsModelChanged();
+    void databaseValidChanged();
 
 private:
     LocalDocsModel *m_localDocsModel;

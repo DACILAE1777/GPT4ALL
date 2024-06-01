@@ -41,15 +41,26 @@ struct CollectionItem {
     QString collection;
     QString folder_path;
     int folder_id = -1;
-    bool installed = false;
-    bool indexing = false;
-    QString error;
-    int currentDocsToIndex = 0;
-    int totalDocsToIndex = 0;
-    size_t currentBytesToIndex = 0;
-    size_t totalBytesToIndex = 0;
-    size_t currentEmbeddingsToIndex = 0;
-    size_t totalEmbeddingsToIndex = 0;
+    bool installed = false; // not database
+    bool indexing = false; // not database
+    bool forceIndexing = false;
+    QString error; // not database
+
+    // progress
+    int currentDocsToIndex = 0; // not database
+    int totalDocsToIndex = 0; // not database
+    size_t currentBytesToIndex = 0; // not database
+    size_t totalBytesToIndex = 0; // not database
+    size_t currentEmbeddingsToIndex = 0; // not database
+    size_t totalEmbeddingsToIndex = 0; // not database
+
+    // statistics
+    size_t totalDocs = 0;
+    size_t totalWords = 0;
+    size_t totalTokens = 0;
+    QDateTime lastUpdate;
+    QString fileCurrentlyProcessing;
+    QString embeddingModel;
 };
 Q_DECLARE_METATYPE(CollectionItem)
 
@@ -60,48 +71,44 @@ public:
     Database(int chunkSize);
     virtual ~Database();
 
+    bool isValid() const { return m_databaseValid; }
+
 public Q_SLOTS:
     void start();
     void scanQueue();
-    void scanDocuments(int folder_id, const QString &folder_path, bool isNew);
-    bool addFolder(const QString &collection, const QString &path, bool fromDb);
+    void scanDocuments(int folder_id, const QString &folder_path);
+    void forceIndexing(const QString &collection);
+    void addFolder(const QString &collection, const QString &path);
     void removeFolder(const QString &collection, const QString &path);
     void retrieveFromDB(const QList<QString> &collections, const QString &text, int retrievalSize, QList<ResultInfo> *results);
     void cleanDB();
     void changeChunkSize(int chunkSize);
 
 Q_SIGNALS:
-    void docsToScanChanged();
-    void updateInstalled(int folder_id, bool b);
-    void updateIndexing(int folder_id, bool b);
-    void updateError(int folder_id, const QString &error);
-    void updateCurrentDocsToIndex(int folder_id, size_t currentDocsToIndex);
-    void updateTotalDocsToIndex(int folder_id, size_t totalDocsToIndex);
-    void subtractCurrentBytesToIndex(int folder_id, size_t subtractedBytes);
-    void updateCurrentBytesToIndex(int folder_id, size_t currentBytesToIndex);
-    void updateTotalBytesToIndex(int folder_id, size_t totalBytesToIndex);
-    void updateCurrentEmbeddingsToIndex(int folder_id, size_t currentBytesToIndex);
-    void updateTotalEmbeddingsToIndex(int folder_id, size_t totalBytesToIndex);
-    void addCollectionItem(const CollectionItem &item, bool fromDb);
-    void removeFolderById(int folder_id);
-    void collectionListUpdated(const QList<CollectionItem> &collectionList);
+    // Signals for the gui only
+    void requestUpdateGuiForCollectionItem(const CollectionItem &item);
+    void requestAddGuiCollectionItem(const CollectionItem &item);
+    void requestRemoveGuiFolderById(int folder_id);
+    void requestGuiCollectionListUpdated(const QList<CollectionItem> &collectionList);
+    void databaseValidChanged();
 
 private Q_SLOTS:
     void directoryChanged(const QString &path);
     bool addFolderToWatch(const QString &path);
     bool removeFolderFromWatch(const QString &path);
-    int addCurrentFolders();
+    void addCurrentFolders();
     void handleEmbeddingsGenerated(const QVector<EmbeddingResult> &embeddings);
     void handleErrorGenerated(int folder_id, const QString &error);
 
 private:
-    enum class FolderStatus { Started, Embedding, Complete };
-    struct FolderStatusRecord { qint64 startTime; bool isNew; int numDocs, docsChanged, chunksRead; };
-
+    bool initDb();
+    bool addForcedCollection(const CollectionItem &collection);
     void removeFolderInternal(const QString &collection, int folder_id, const QString &path);
     size_t chunkStream(QTextStream &stream, int folder_id, int document_id, const QString &file,
         const QString &title, const QString &author, const QString &subject, const QString &keywords, int page,
         int maxChunks = -1);
+    void appendChunk(const EmbeddingChunk &chunk);
+    void sendChunkList();
     void removeEmbeddingsByDocumentId(int document_id);
     void scheduleNext(int folder_id, size_t countForFolder);
     void handleDocumentError(const QString &errorMessage,
@@ -112,20 +119,27 @@ private:
     void removeFolderFromDocumentQueue(int folder_id);
     void enqueueDocumentInternal(const DocumentInfo &info, bool prepend = false);
     void enqueueDocuments(int folder_id, const QVector<DocumentInfo> &infos);
-    void updateIndexingStatus();
-    void updateFolderStatus(int folder_id, FolderStatus status, int numDocs = -1, bool atStart = false, bool isNew = false);
+
+    CollectionItem guiCollectionItem(int folder_id) const;
+    void updateGuiForCollectionItem(const CollectionItem &item);
+    void addGuiCollectionItem(const CollectionItem &item);
+    void removeGuiFolderById(int folder_id);
+    void guiCollectionListUpdated(const QList<CollectionItem> &collectionList);
+    void scheduleUncompletedEmbeddings(int folder_id);
+    void updateCollectionStatistics();
 
 private:
     int m_chunkSize;
     QTimer *m_scanTimer;
     QMap<int, QQueue<DocumentInfo>> m_docsToScan;
-    QElapsedTimer m_indexingTimer;
-    QMap<int, FolderStatusRecord> m_foldersBeingIndexed;
     QList<ResultInfo> m_retrieve;
     QThread m_dbThread;
     QFileSystemWatcher *m_watcher;
     EmbeddingLLM *m_embLLM;
     Embeddings *m_embeddings;
+    QVector<EmbeddingChunk> m_chunkList;
+    QHash<int, CollectionItem> m_collectionMap; // used only for tracking indexing/embedding progress
+    std::atomic<bool> m_databaseValid;
 };
 
 #endif // DATABASE_H

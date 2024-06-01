@@ -112,14 +112,17 @@ qt_add_qml_module(chat
     NO_CACHEGEN
     QML_FILES
       main.qml
+      qml/AddCollectionView.qml
+      qml/AddModelView.qml
       qml/ChatDrawer.qml
       qml/ChatView.qml
       qml/CollectionsDialog.qml
-      qml/ModelDownloaderDialog.qml
+      qml/HomeView.qml
+      qml/ModelDownloaderView.qml
       qml/NetworkDialog.qml
       qml/NewVersionDialog.qml
       qml/ThumbsDownDialog.qml
-      qml/SettingsDialog.qml
+      qml/SettingsView.qml
       qml/StartupDialog.qml
       qml/PopupDialog.qml
       qml/AboutDialog.qml
@@ -127,6 +130,7 @@ qt_add_qml_module(chat
       qml/ModelSettings.qml
       qml/ApplicationSettings.qml
       qml/LocalDocsSettings.qml
+      qml/LocalDocsView.qml
       qml/SwitchModelDialog.qml
       qml/MySettingsTab.qml
       qml/MySettingsStack.qml
@@ -138,28 +142,42 @@ qt_add_qml_module(chat
       qml/MyComboBox.qml
       qml/MyDialog.qml
       qml/MyDirectoryField.qml
+      qml/MyFancyLink.qml
       qml/MyTextArea.qml
       qml/MyTextField.qml
       qml/MyCheckBox.qml
       qml/MyBusyIndicator.qml
       qml/MyMiniButton.qml
       qml/MyToolButton.qml
+      qml/MyWelcomeButton.qml
     RESOURCES
       icons/send_message.svg
       icons/stop_generating.svg
       icons/regenerate.svg
+      icons/chat.svg
+      icons/changelog.svg
       icons/close.svg
       icons/copy.svg
       icons/db.svg
+      icons/discord.svg
       icons/download.svg
       icons/settings.svg
       icons/eject.svg
       icons/edit.svg
+      icons/github.svg
+      icons/globe.svg
+      icons/home.svg
       icons/image.svg
+      icons/info.svg
+      icons/local-docs.svg
+      icons/models.svg
+      icons/nomic_logo.svg
+      icons/search.svg
       icons/trash.svg
       icons/network.svg
       icons/thumbs_up.svg
       icons/thumbs_down.svg
+      icons/twitter.svg
       icons/left_panel_closed.svg
       icons/left_panel_open.svg
       icons/logo.svg
