@@ -578,8 +578,8 @@ jobs:
             cd gpt4all-backend
             mkdir -p runtimes/build
             cd runtimes/build
-            cmake ../..
-            cmake --build . --parallel --config Release
+            cmake ../.. -DCMAKE_BUILD_TYPE=Release
+            cmake --build . --parallel
             mkdir ../linux-x64
             cp -L *.so ../linux-x64 # otherwise persist_to_workspace seems to mess symlinks
       - persist_to_workspace:
@@ -1029,13 +1029,11 @@ jobs:
             cp /tmp/gpt4all-backend/runtimes/darwin/*-*.* runtimes/darwin/native/
 
             cp /tmp/gpt4all-backend/prebuilds/darwin-x64/*.node prebuilds/darwin-x64/    
-            
-            # Fallback build if user is not on above prebuilds
-            mv -f binding.ci.gyp binding.gyp
 
-            mkdir gpt4all-backend
+            # copy the backend source we depend on to make fallback builds work
+            mkdir backend
             cd ../../gpt4all-backend
-            mv llmodel.h llmodel.cpp llmodel_c.cpp llmodel_c.h sysinfo.h dlhandle.h ../gpt4all-bindings/typescript/gpt4all-backend/
+            mv llmodel.h llmodel.cpp llmodel_c.cpp llmodel_c.h sysinfo.h dlhandle.h ../gpt4all-bindings/typescript/backend/
             
       # Test install
       - node/install-packages:
@@ -1045,7 +1043,7 @@ jobs:
       - run: 
           command: | 
             cd gpt4all-bindings/typescript
-            yarn run test
+            yarn run test:ci
       - run:
           command: |
             cd gpt4all-bindings/typescript
